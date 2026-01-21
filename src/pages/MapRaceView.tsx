@@ -478,4 +478,3 @@ const MapRaceView: React.FC = () => {
 };
 
 export default MapRaceView;
-
