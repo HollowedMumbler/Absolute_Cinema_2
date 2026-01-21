@@ -143,7 +143,7 @@ const MapRaceView: React.FC = () => {
       // Check for missing or placeholder keys
       if (
         !apiKey ||
-        apiKey === "YOUR_API_KEY" ||
+        apiKey === "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImMwZDkxMmZjMmYzNTQ4Zjg5NjlmZTYwOTQ3ZWU4MGE3IiwiaCI6Im11cm11cjY0In0=" ||
         apiKey.includes("placeholder")
       ) {
         console.warn("Invalid or missing API Key, switching to fallback map.");
