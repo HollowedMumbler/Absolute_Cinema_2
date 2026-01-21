@@ -5,12 +5,13 @@ import { MobileNav } from "@/components/MobileNav";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { GameProvider } from "@/contexts/GameContext";
-import Challenges from "./pages/Challenges";
-import Index from "./pages/Index";
-import Leaderboard from "./pages/Leaderboard";
-import Race from "./pages/MapRaceView";
-import NotFound from "./pages/NotFound";
-import Profile from "./pages/Profile";
+import Challenges from "@/pages/Challenges";
+import Dashboard from "@/pages/Dashboard";
+import Leaderboard from "@/pages/Leaderboard";
+import Race from "@/pages/MapRaceView";
+import NotFound from "@/pages/NotFound";
+import { Onboarding } from "@/pages/Onboarding";
+import Profile from "@/pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -20,9 +21,10 @@ const App = () => (
       <TooltipProvider>
         <Sonner />
         <BrowserRouter>
-          <div className="min-h-screen bg-background">
+          <div className="bg-background min-h-screen">
             <Routes>
-              <Route index element={<Index />} />
+              <Route index element={<Onboarding />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/race" element={<Race />} />
               <Route path="/challenges" element={<Challenges />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
