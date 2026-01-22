@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { useGame, VehicleType } from '@/contexts/GameContext';
+// Update the import path below if your GameContext is in src/contexts/GameContext.tsx
+import { useGame, VehicleType } from '../contexts/GameContext';
 import { Lock } from 'lucide-react';
 
 export function VehicleSelector() {

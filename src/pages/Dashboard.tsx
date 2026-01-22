@@ -1,16 +1,27 @@
 import { motion } from "framer-motion";
-import { Zap, Leaf, Route, Flame, Trophy, ChevronRight } from "lucide-react";
+import { Zap, Leaf, Route, Flame, Trophy, ChevronRight, LogOut } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
 import { StatCard } from "@/components/StatCard";
 import { ProgressRing } from "@/components/ProgressRing";
 import { VehicleSelector } from "@/components/VehicleSelector";
 import { Link } from "react-router";
+import { getAuth, signOut } from "firebase/auth";
 
 const Index = () => {
   const { user, stats, challenges } = useGame();
   const xpProgress = (stats.xp / stats.xpToNextLevel) * 100;
 
   const activeChallenge = challenges.find((c) => c.current < c.target);
+
+  const handleLogout = async () => {
+    try {
+      const auth = getAuth();
+      await signOut(auth);
+      window.location.reload();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen pb-24 px-4 pt-6">
@@ -26,17 +37,31 @@ const Index = () => {
             {user.name}
           </h1>
         </div>
-        <Link to="/profile" className="relative">
-          <motion.div
+        
+        <div className="flex items-center gap-3">
+          {/* Logout Button */}
+          <motion.button
             whileTap={{ scale: 0.95 }}
-            className="w-14 h-14 rounded-full bg-card border-2 border-primary flex items-center justify-center text-2xl animate-pulse-glow"
+            onClick={handleLogout}
+            className="p-3 rounded-full bg-red-500/10 hover:bg-red-500/20 transition-colors"
+            title="Logout"
           >
-            {user.avatar}
-          </motion.div>
-          <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-xs font-display font-bold rounded-full w-6 h-6 flex items-center justify-center">
-            {stats.level}
-          </div>
-        </Link>
+            <LogOut className="w-5 h-5 text-red-500" />
+          </motion.button>
+
+          {/* Profile Avatar */}
+          <Link to="/profile" className="relative">
+            <motion.div
+              whileTap={{ scale: 0.95 }}
+              className="w-14 h-14 rounded-full bg-card border-2 border-primary flex items-center justify-center text-2xl animate-pulse-glow"
+            >
+              {user.avatar}
+            </motion.div>
+            <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-xs font-display font-bold rounded-full w-6 h-6 flex items-center justify-center">
+              {stats.level}
+            </div>
+          </Link>
+        </div>
       </motion.div>
 
       {/* Level Progress */}
