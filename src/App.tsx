@@ -9,7 +9,6 @@ import { MobileNav } from "@/components/MobileNav";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { GameProvider } from "@/contexts/GameContext";
-<<<<<<< HEAD
 import Challenges from "@/pages/Challenges";
 import Dashboard from "@/pages/Dashboard";
 import Leaderboard from "@/pages/Leaderboard";
@@ -17,16 +16,7 @@ import Race from "@/pages/MapRaceView";
 import NotFound from "@/pages/NotFound";
 import Profile from "@/pages/Profile";
 import { Onboarding } from "@/pages/Onboarding";
-=======
-import Challenges from "./pages/Challenges";
-import Index from "./pages/Index";
-import Leaderboard from "./pages/Leaderboard";
-import Race from "./pages/MapRaceView";
-import NotFound from "./pages/NotFound";
-import Profile from "./pages/Profile";
-import Onboarding from "./pages/Onboarding";
-import Login from "./pages/Login";
->>>>>>> master
+import Login from "@/pages/Login";
 
 const queryClient = new QueryClient();
 
@@ -101,7 +91,7 @@ const AppContent = () => {
     <GameProvider>
       <div className="min-h-screen bg-background">
         <Routes>
-          <Route index element={<Index />} />
+          <Route index element={<Dashboard />} />
           <Route path="/race" element={<Race />} />
           <Route path="/challenges" element={<Challenges />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
@@ -116,34 +106,12 @@ const AppContent = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-<<<<<<< HEAD
-    <GameProvider>
-      <TooltipProvider>
-        <Sonner />
-        <BrowserRouter>
-          <div className="min-h-screen bg-background">
-            <Routes>
-              <Route index element={<Onboarding />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/race" element={<Race />} />
-              <Route path="/challenges" element={<Challenges />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <MobileNav />
-          </div>
-        </BrowserRouter>
-      </TooltipProvider>
-    </GameProvider>
-=======
     <TooltipProvider>
       <Sonner />
       <BrowserRouter>
         <AppContent />
       </BrowserRouter>
     </TooltipProvider>
->>>>>>> master
   </QueryClientProvider>
 );
 

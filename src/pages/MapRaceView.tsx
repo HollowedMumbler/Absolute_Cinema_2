@@ -154,15 +154,7 @@ const MapRaceView: React.FC = () => {
       const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
 
       // Check for missing or placeholder keys
-<<<<<<< HEAD
       if (!apiKey || apiKey.includes("placeholder")) {
-=======
-      if (
-        !apiKey ||
-        apiKey === "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImMwZDkxMmZjMmYzNTQ4Zjg5NjlmZTYwOTQ3ZWU4MGE3IiwiaCI6Im11cm11cjY0In0=" ||
-        apiKey.includes("placeholder")
-      ) {
->>>>>>> master
         console.warn("Invalid or missing API Key, switching to fallback map.");
         if (isMounted) setUseFallback(true);
         return;
