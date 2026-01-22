@@ -1,18 +1,17 @@
-import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Bike,
-  Bus,
-  Car,
-  Footprints,
-  MapPin,
-  Navigation2,
   Play,
   Square,
+  Bike,
+  Footprints,
+  Bus,
+  Car,
+  MapPin,
+  Navigation2,
 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
-
-import { SAFE_ZONES } from "../../constants";
 import { TransportMode } from "../../types.ts";
+import { SAFE_ZONES } from "../../constants";
+import { Loader } from "@googlemaps/js-api-loader";
 
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
@@ -95,12 +94,6 @@ const DARK_MAP_STYLE = [
   },
 ];
 
-setOptions({
-  key: import.meta.env.VITE_GOOGLE_API_KEY,
-  v: "weekly",
-  libraries: ["maps"],
-});
-
 const MapRaceView: React.FC = () => {
   const [isRacing, setIsRacing] = useState(false);
   const [speed, setSpeed] = useState(0);
@@ -145,10 +138,14 @@ const MapRaceView: React.FC = () => {
     let isMounted = true;
 
     const initMap = async () => {
-      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+      const apiKey = import.meta.env.VITE_API_KEY;
 
       // Check for missing or placeholder keys
-      if (!apiKey || apiKey.includes("placeholder")) {
+      if (
+        !apiKey ||
+        apiKey === "YOUR_API_KEY" ||
+        apiKey.includes("placeholder")
+      ) {
         console.warn("Invalid or missing API Key, switching to fallback map.");
         if (isMounted) setUseFallback(true);
         return;
@@ -160,9 +157,14 @@ const MapRaceView: React.FC = () => {
         if (isMounted) setUseFallback(true);
       };
 
-      const { Map } = await importLibrary("maps");
+      const loader = new Loader({
+        apiKey: apiKey,
+        version: "weekly",
+      });
 
       try {
+        const google = await loader.load();
+
         if (!isMounted) return;
 
         // Get initial location
@@ -176,7 +178,7 @@ const MapRaceView: React.FC = () => {
               // Check if mapRef exists and we are not already in fallback mode
               if (mapRef.current) {
                 try {
-                  mapInstanceRef.current = new Map(mapRef.current, {
+                  mapInstanceRef.current = new google.maps.Map(mapRef.current, {
                     center: pos,
                     zoom: 16,
                     styles: DARK_MAP_STYLE,
@@ -305,13 +307,13 @@ const MapRaceView: React.FC = () => {
   }, [isRacing, useFallback]);
 
   return (
-    <div className="relative flex h-screen w-full flex-col bg-slate-900">
+    <div className="h-screen w-full relative bg-slate-900 flex flex-col">
       {/* Map Rendering: Real or Fallback */}
       {useFallback ? (
         // --- Fallback Simulated Map ---
-        <div className="animate-fade-in absolute inset-0 z-0 overflow-hidden opacity-80">
+        <div className="absolute inset-0 z-0 overflow-hidden opacity-80 animate-fade-in">
           <div
-            className="relative h-full w-full bg-[#1a1f2e]"
+            className="w-full h-full bg-[#1a1f2e] relative"
             style={{
               backgroundImage:
                 "radial-gradient(#2d3748 1px, transparent 1px), radial-gradient(#2d3748 1px, transparent 1px)",
@@ -320,40 +322,40 @@ const MapRaceView: React.FC = () => {
             }}
           >
             {/* Simulated Roads */}
-            <div className="absolute top-1/2 left-0 h-4 w-full -rotate-12 transform border-y-2 border-slate-600 bg-slate-700"></div>
-            <div className="absolute top-0 left-1/3 h-full w-6 rotate-45 transform border-x-2 border-slate-600 bg-slate-700"></div>
+            <div className="absolute top-1/2 left-0 w-full h-4 bg-slate-700 transform -rotate-12 border-y-2 border-slate-600"></div>
+            <div className="absolute top-0 left-1/3 h-full w-6 bg-slate-700 transform rotate-45 border-x-2 border-slate-600"></div>
 
             {/* Safe Zone Markers (From Constants) */}
             {SAFE_ZONES.map((zone) => (
               <div
                 key={zone.id}
-                className="group absolute flex cursor-pointer flex-col items-center transition-transform hover:scale-110"
+                className="absolute flex flex-col items-center group cursor-pointer transition-transform hover:scale-110"
                 style={{ top: `${zone.lat}%`, left: `${zone.lng}%` }}
               >
                 <div className="relative">
-                  <div className="absolute -inset-2 animate-ping rounded-full bg-green-500/30"></div>
-                  <div className="rounded-full border-2 border-white bg-green-500 p-2 text-slate-900 shadow-lg">
+                  <div className="absolute -inset-2 bg-green-500/30 rounded-full animate-ping"></div>
+                  <div className="bg-green-500 text-slate-900 p-2 rounded-full border-2 border-white shadow-lg">
                     <MapPin size={20} fill="currentColor" />
                   </div>
                 </div>
-                <span className="mt-1 rounded border border-slate-700 bg-slate-900/80 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+                <span className="mt-1 bg-slate-900/80 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm font-bold border border-slate-700">
                   {zone.name}
                 </span>
               </div>
             ))}
 
             {/* User Puck */}
-            <div className="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transform">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-blue-500 shadow-xl">
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+              <div className="w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-xl flex items-center justify-center">
                 <Navigation2
                   size={14}
-                  className="rotate-45 transform fill-white text-white"
+                  className="text-white fill-white transform rotate-45"
                 />
               </div>
             </div>
 
             {/* Fallback Notice */}
-            <div className="absolute top-4 left-4 rounded border border-yellow-500/50 bg-yellow-500/10 px-2 py-1 text-[10px] text-yellow-500">
+            <div className="absolute top-4 left-4 bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 text-[10px] px-2 py-1 rounded">
               Simulated Mode (Maps API Unavailable)
             </div>
           </div>
@@ -364,7 +366,7 @@ const MapRaceView: React.FC = () => {
           <div ref={mapRef} className="absolute inset-0 z-0 h-full w-full" />
           {locationError && !useFallback && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4">
-              <div className="rounded-xl border border-red-500 bg-red-500/20 p-4 text-center text-red-200 backdrop-blur-md">
+              <div className="bg-red-500/20 border border-red-500 text-red-200 p-4 rounded-xl text-center backdrop-blur-md">
                 <p className="font-bold">! GPS Signal Lost</p>
                 <p className="text-sm">{locationError}</p>
               </div>
@@ -374,23 +376,23 @@ const MapRaceView: React.FC = () => {
       )}
 
       {/* Top HUD */}
-      <div className="pointer-events-none absolute top-0 right-0 left-0 z-20 bg-gradient-to-b from-slate-900/90 to-transparent p-4 pt-8">
-        <div className="flex items-start justify-between">
-          <div className="rounded-lg border border-slate-700 bg-slate-800/90 p-2 px-4 shadow-xl backdrop-blur">
-            <span className="block text-xs tracking-wider text-slate-400 uppercase">
+      <div className="absolute top-0 left-0 right-0 z-20 p-4 pt-8 bg-gradient-to-b from-slate-900/90 to-transparent pointer-events-none">
+        <div className="flex justify-between items-start">
+          <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg p-2 px-4 shadow-xl">
+            <span className="text-xs text-slate-400 block uppercase tracking-wider">
               Speed
             </span>
-            <span className="font-mono text-2xl font-bold text-green-400">
+            <span className="text-2xl font-mono font-bold text-green-400">
               {speed} <span className="text-sm text-slate-500">km/h</span>
             </span>
           </div>
 
-          <div className="rounded-lg border border-slate-700 bg-slate-800/90 p-2 px-4 text-right shadow-xl backdrop-blur">
-            <span className="block text-xs tracking-wider text-slate-400 uppercase">
+          <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg p-2 px-4 shadow-xl text-right">
+            <span className="text-xs text-slate-400 block uppercase tracking-wider">
               Time
             </span>
             <span
-              className={`font-mono text-2xl font-bold ${isRacing ? "text-white" : "text-slate-500"}`}
+              className={`text-2xl font-mono font-bold ${isRacing ? "text-white" : "text-slate-500"}`}
             >
               {formatTime(elapsedTime)}
             </span>
@@ -400,7 +402,7 @@ const MapRaceView: React.FC = () => {
 
       {/* Transport Mode Selector (Only visible if not racing) */}
       {!isRacing && (
-        <div className="pointer-events-auto absolute top-28 left-4 z-20 space-y-2">
+        <div className="absolute top-28 left-4 z-20 space-y-2 pointer-events-auto">
           {[
             { mode: TransportMode.WALK, icon: Footprints },
             { mode: TransportMode.BIKE, icon: Bike },
@@ -410,14 +412,14 @@ const MapRaceView: React.FC = () => {
             <button
               key={mode}
               onClick={() => setSelectedMode(mode)}
-              className={`flex items-center gap-2 rounded-full border p-2 pr-4 shadow-lg transition-all ${
+              className={`flex items-center gap-2 p-2 pr-4 rounded-full shadow-lg border transition-all ${
                 selectedMode === mode
-                  ? "border-blue-400 bg-blue-600 text-white"
-                  : "border-slate-700 bg-slate-800 text-slate-400"
+                  ? "bg-blue-600 border-blue-400 text-white"
+                  : "bg-slate-800 border-slate-700 text-slate-400"
               }`}
             >
               <div
-                className={`rounded-full p-1 ${selectedMode === mode ? "bg-white/20" : ""}`}
+                className={`p-1 rounded-full ${selectedMode === mode ? "bg-white/20" : ""}`}
               >
                 <Icon size={16} />
               </div>
@@ -428,11 +430,11 @@ const MapRaceView: React.FC = () => {
       )}
 
       {/* Bottom Control Deck */}
-      <div className="pointer-events-auto absolute right-4 bottom-24 left-4 z-20">
-        <div className="rounded-2xl border border-slate-700 bg-slate-900/90 p-4 shadow-2xl backdrop-blur-md">
-          <div className="mb-4 flex items-center justify-between">
+      <div className="absolute bottom-24 left-4 right-4 z-20 pointer-events-auto">
+        <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700 rounded-2xl p-4 shadow-2xl">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-white">
+              <h3 className="text-white font-bold">
                 {isRacing ? "Race in Progress" : "Ready to Race?"}
               </h3>
               <p className="text-xs text-slate-400">
@@ -443,8 +445,8 @@ const MapRaceView: React.FC = () => {
             </div>
             {isRacing && (
               <div className="flex items-center gap-1">
-                <span className="block h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
-                <span className="text-xs font-bold text-red-400 uppercase">
+                <span className="block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <span className="text-xs text-red-400 font-bold uppercase">
                   REC
                 </span>
               </div>
@@ -453,10 +455,10 @@ const MapRaceView: React.FC = () => {
 
           <button
             onClick={() => setIsRacing(!isRacing)}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-lg font-black tracking-wide uppercase shadow-lg transition-transform active:scale-95 ${
+            className={`w-full py-4 rounded-xl font-black text-lg uppercase tracking-wide shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 ${
               isRacing
-                ? "bg-red-500 text-white hover:bg-red-600"
-                : "bg-green-500 text-slate-900 hover:bg-green-600"
+                ? "bg-red-500 hover:bg-red-600 text-white"
+                : "bg-green-500 hover:bg-green-600 text-slate-900"
             }`}
           >
             {isRacing ? (

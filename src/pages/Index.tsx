@@ -1,13 +1,12 @@
-import { ChevronRight, Flame, Leaf, Route, Trophy, Zap } from "lucide-react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
+import { Zap, Leaf, Route, Flame, Trophy, ChevronRight } from "lucide-react";
+import { useGame } from "@/contexts/GameContext";
+import { StatCard } from "@/components/StatCard";
+import { ProgressRing } from "@/components/ProgressRing";
+import { VehicleSelector } from "@/components/VehicleSelector";
 import { Link } from "react-router";
 
-import { ProgressRing } from "@/components/ProgressRing";
-import { StatCard } from "@/components/StatCard";
-import { VehicleSelector } from "@/components/VehicleSelector";
-import { useGame } from "@/contexts/GameContext";
-
-const Dashboard = () => {
+const Index = () => {
   const { user, stats, challenges } = useGame();
   const xpProgress = (stats.xp / stats.xpToNextLevel) * 100;
 
@@ -189,4 +188,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Index;
