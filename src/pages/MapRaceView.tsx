@@ -11,7 +11,12 @@ import {
 } from "lucide-react";
 import { TransportMode } from "../../types.ts";
 import { SAFE_ZONES } from "../../constants";
-import { Loader } from "@googlemaps/js-api-loader";
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
+
+setOptions({
+  key: import.meta.env.VITE_GOOGLE_API_KEY,
+  v: "weekly",
+});
 
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
@@ -138,14 +143,10 @@ const MapRaceView: React.FC = () => {
     let isMounted = true;
 
     const initMap = async () => {
-      const apiKey = import.meta.env.VITE_API_KEY;
+      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
 
       // Check for missing or placeholder keys
-      if (
-        !apiKey ||
-        apiKey === "YOUR_API_KEY" ||
-        apiKey.includes("placeholder")
-      ) {
+      if (!apiKey || apiKey.includes("placeholder")) {
         console.warn("Invalid or missing API Key, switching to fallback map.");
         if (isMounted) setUseFallback(true);
         return;
@@ -157,14 +158,9 @@ const MapRaceView: React.FC = () => {
         if (isMounted) setUseFallback(true);
       };
 
-      const loader = new Loader({
-        apiKey: apiKey,
-        version: "weekly",
-      });
+      const { Map } = await importLibrary("maps");
 
       try {
-        const google = await loader.load();
-
         if (!isMounted) return;
 
         // Get initial location
@@ -178,7 +174,7 @@ const MapRaceView: React.FC = () => {
               // Check if mapRef exists and we are not already in fallback mode
               if (mapRef.current) {
                 try {
-                  mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+                  mapInstanceRef.current = new Map(mapRef.current, {
                     center: pos,
                     zoom: 16,
                     styles: DARK_MAP_STYLE,
