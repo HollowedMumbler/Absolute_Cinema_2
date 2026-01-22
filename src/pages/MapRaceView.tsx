@@ -13,6 +13,14 @@ import { TransportMode } from "../../types.ts";
 import { SAFE_ZONES } from "../../constants";
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 
+interface ImportMetaEnv {
+  VITE_GOOGLE_API_KEY: string;
+}
+
+interface ImportMeta {
+  env: ImportMetaEnv;
+}
+
 setOptions({
   key: import.meta.env.VITE_GOOGLE_API_KEY,
   v: "weekly",

@@ -71,7 +71,7 @@ const Challenges = () => {
           </div>
         </motion.div>
       )}
-
+gi
       {/* Daily Challenges */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
