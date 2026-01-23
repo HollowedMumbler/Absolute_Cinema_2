@@ -43,7 +43,8 @@ export default function Login({ onNavigate }: LoginProps) {
       }
       
       setIsLoading(false);
-      onNavigate('onboarding');
+      // Don't navigate here - let Firebase auth listener in App.tsx handle it
+      // The auth listener will check if user completed onboarding and route accordingly
     } catch (error) {
       console.error("Google sign in error:", error);
       setIsLoading(false);

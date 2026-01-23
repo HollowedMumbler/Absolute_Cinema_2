@@ -3,6 +3,7 @@ import { User, Settings, Share2, Leaf, Route, Zap, Trophy, ChevronRight } from '
 import { useGame } from '@/contexts/GameContext';
 import { BadgeGrid } from '@/components/BadgeGrid';
 import { ProgressRing } from '@/components/ProgressRing';
+import { Link } from 'react-router';
 
 const Profile = () => {
   const { user, stats, commuteLogs } = useGame();
@@ -22,12 +23,14 @@ const Profile = () => {
           </div>
           <h1 className="text-2xl font-display font-bold">Profile</h1>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          className="p-3 rounded-xl bg-muted"
-        >
-          <Settings className="w-5 h-5 text-muted-foreground" />
-        </motion.button>
+        <Link to="/settings">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+          >
+            <Settings className="w-5 h-5 text-muted-foreground" />
+          </motion.button>
+        </Link>
       </motion.div>
 
       {/* Profile Card */}

@@ -1,20 +1,25 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Car, Bike, Bus, Leaf, CheckCircle2, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router";
+import { getAuth } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../config/firebase";
 
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card } from "../components/ui/card";
 import { Logo } from "../components/Logo";
 
-export function Onboarding() {
+interface OnboardingProps {
+  onComplete?: (userData: any) => void;
+}
+
+export function Onboarding({ onComplete }: OnboardingProps) {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [selectedMode, setSelectedMode] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState("");
-
-  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const modes = [
     { id: "car", label: "Car", icon: Car, color: "bg-orange-500" },
@@ -30,12 +35,45 @@ export function Onboarding() {
     { id: "scooter", label: "E-Scooter", emoji: "🛴", ecoFactor: 0.9 },
   ];
 
-  const handleComplete = () => {
-    navigate("/dashboard");
+  const handleComplete = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) {
+        console.error("No user logged in");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Save user data to Firestore in the "mainUser" collection
+      const userData = {
+        name,
+        mode: selectedMode,
+        avatar: selectedAvatar,
+        createdAt: new Date(),
+        uid: user.uid,
+        email: user.email,
+      };
+
+      await setDoc(doc(db, "mainUser", user.uid), userData);
+      
+      console.log("User onboarding data saved:", userData);
+      
+      // Call the onComplete callback if provided
+      if (onComplete) {
+        onComplete(userData);
+      }
+    } catch (error) {
+      console.error("Error saving onboarding data:", error);
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 pb-28">
+    <div className="flex min-h-screen items-center justify-center p-4 pb-28 bg-slate-900">
       <div className="w-full max-w-md">
         <AnimatePresence mode="wait">
           {step === 0 && (
@@ -263,10 +301,23 @@ export function Onboarding() {
 
                   <Button
                     onClick={handleComplete}
+                    disabled={isSubmitting}
                     className="mt-6 w-full bg-gradient-to-r from-green-500 to-emerald-600 py-6 text-white hover:from-green-600 hover:to-emerald-700"
                     size="lg"
                   >
-                    Start Racing! 🏁
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Setting up...
+                      </>
+                    ) : (
+                      <>
+                        Start Racing! 🏁
+                      </>
+                    )}
                   </Button>
                 </div>
               </Card>
@@ -289,4 +340,3 @@ export function Onboarding() {
     </div>
   );
 }
-

@@ -15,6 +15,7 @@ import Leaderboard from "@/pages/Leaderboard";
 import Race from "@/pages/MapRaceView";
 import NotFound from "@/pages/NotFound";
 import Profile from "@/pages/Profile";
+import Settings from "@/pages/Settings";
 import { Onboarding } from "@/pages/Onboarding";
 import Login from "@/pages/Login";
 
@@ -96,6 +97,7 @@ const AppContent = () => {
           <Route path="/challenges" element={<Challenges />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <MobileNav />
