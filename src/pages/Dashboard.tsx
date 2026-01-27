@@ -1,39 +1,49 @@
 import { motion } from "framer-motion";
-import { Zap, Leaf, Route, Flame, Trophy, ChevronRight } from "lucide-react";
-import { useGame } from "@/contexts/GameContext";
-import { StatCard } from "@/components/StatCard";
-import { ProgressRing } from "@/components/ProgressRing";
-import { VehicleSelector } from "@/components/VehicleSelector";
-import { Link } from "react-router";
+import { ChevronRight, Flame, Leaf, Route, Trophy, Zap } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 
-const Index = () => {
+import { ProgressRing } from "@/components/ProgressRing";
+import { StatCard } from "@/components/StatCard";
+import { VehicleSelector } from "@/components/VehicleSelector";
+import { useGame } from "@/contexts/GameContext";
+
+const Dashboard = () => {
   const { user, stats, challenges } = useGame();
+  const navigate = useNavigate();
   const xpProgress = (stats.xp / stats.xpToNextLevel) * 100;
 
   const activeChallenge = challenges.find((c) => c.current < c.target);
 
+  if (!user) {
+    navigate("/sign-in");
+  }
+
+  if (user.isNew) {
+    navigate("/onboarding");
+  }
+
   return (
-    <div className="min-h-screen pb-24 px-4 pt-6">
+    <div className="min-h-screen px-4 pt-6 pb-24">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6"
+        className="mb-6 flex items-center justify-between"
       >
         <div>
           <p className="text-muted-foreground text-sm">Welcome back,</p>
-          <h1 className="text-2xl font-display font-bold text-gradient-primary">
+          <h1 className="font-display text-gradient-primary text-2xl font-bold">
             {user.name}
           </h1>
         </div>
         <Link to="/profile" className="relative">
           <motion.div
             whileTap={{ scale: 0.95 }}
-            className="w-14 h-14 rounded-full bg-card border-2 border-primary flex items-center justify-center text-2xl animate-pulse-glow"
+            className="bg-card border-primary animate-pulse-glow flex h-14 w-14 items-center justify-center rounded-full border-2 text-2xl"
           >
             {user.avatar}
           </motion.div>
-          <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground text-xs font-display font-bold rounded-full w-6 h-6 flex items-center justify-center">
+          <div className="bg-primary text-primary-foreground font-display absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold">
             {stats.level}
           </div>
         </Link>
@@ -49,20 +59,20 @@ const Index = () => {
         <div className="flex items-center gap-6">
           <ProgressRing progress={xpProgress} size={100}>
             <div className="text-center">
-              <p className="font-display font-bold text-2xl text-gradient-primary">
+              <p className="font-display text-gradient-primary text-2xl font-bold">
                 {stats.level}
               </p>
-              <p className="text-xs text-muted-foreground">Level</p>
+              <p className="text-muted-foreground text-xs">Level</p>
             </div>
           </ProgressRing>
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Trophy className="w-4 h-4 text-accent" />
-              <span className="text-sm text-muted-foreground">
+            <div className="mb-2 flex items-center gap-2">
+              <Trophy className="text-accent h-4 w-4" />
+              <span className="text-muted-foreground text-sm">
                 Rank #{stats.rank}
               </span>
             </div>
-            <p className="font-display font-bold text-xl mb-1">
+            <p className="font-display mb-1 text-xl font-bold">
               {stats.totalPoints.toLocaleString()}{" "}
               <span className="text-primary">PTS</span>
             </p>
@@ -74,7 +84,7 @@ const Index = () => {
                 transition={{ delay: 0.5, duration: 0.8 }}
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-xs">
               {stats.xp} / {stats.xpToNextLevel} XP to next level
             </p>
           </div>
@@ -82,7 +92,7 @@ const Index = () => {
       </motion.div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="mb-6 grid grid-cols-2 gap-3">
         <StatCard
           icon={Leaf}
           label="CO₂ Saved"
@@ -122,25 +132,25 @@ const Index = () => {
           transition={{ delay: 0.4 }}
           className="mb-6"
         >
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display font-bold text-lg">Active Challenge</h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display text-lg font-bold">Active Challenge</h2>
             <Link
               to="/challenges"
-              className="text-primary text-sm flex items-center gap-1"
+              className="text-primary flex items-center gap-1 text-sm"
             >
-              View All <ChevronRight className="w-4 h-4" />
+              View All <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="racing-card border-l-4 border-l-primary">
-            <div className="flex items-center justify-between mb-2">
+          <div className="racing-card border-l-primary border-l-4">
+            <div className="mb-2 flex items-center justify-between">
               <h3 className="font-display font-semibold">
                 {activeChallenge.title}
               </h3>
               <span className="stat-badge text-accent">
-                <Zap className="w-3 h-3" />+{activeChallenge.reward}
+                <Zap className="h-3 w-3" />+{activeChallenge.reward}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground mb-3">
+            <p className="text-muted-foreground mb-3 text-sm">
               {activeChallenge.description}
             </p>
             <div className="progress-track">
@@ -151,7 +161,7 @@ const Index = () => {
                 }}
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-2 text-xs">
               {activeChallenge.current} / {activeChallenge.target}
             </p>
           </div>
@@ -164,7 +174,7 @@ const Index = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
       >
-        <h2 className="font-display font-bold text-lg mb-3">Your Vehicles</h2>
+        <h2 className="font-display mb-3 text-lg font-bold">Your Vehicles</h2>
         <VehicleSelector />
       </motion.div>
 
@@ -178,7 +188,7 @@ const Index = () => {
         <Link to="/race">
           <motion.button
             whileTap={{ scale: 0.98 }}
-            className="w-full btn-racing text-lg"
+            className="btn-racing w-full text-lg"
           >
             🏁 Start Racing
           </motion.button>
@@ -188,4 +198,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Dashboard;

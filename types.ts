@@ -1,16 +1,16 @@
 export enum ViewState {
-  DASHBOARD = 'DASHBOARD',
-  MAP_RACE = 'MAP_RACE',
-  LEADERBOARD = 'LEADERBOARD',
-  PROFILE = 'PROFILE',
-  AI_COACH = 'AI_COACH'
+  DASHBOARD = "DASHBOARD",
+  MAP_RACE = "MAP_RACE",
+  LEADERBOARD = "LEADERBOARD",
+  PROFILE = "PROFILE",
+  AI_COACH = "AI_COACH",
 }
 
 export enum TransportMode {
-  WALK = 'WALK',
-  BIKE = 'BIKE',
-  EV = 'EV',
-  TRANSIT = 'TRANSIT'
+  WALK = "WALK",
+  BIKE = "BIKE",
+  EV = "EV",
+  TRANSIT = "TRANSIT",
 }
 
 export interface UserStats {
@@ -26,7 +26,7 @@ export interface LeaderboardEntry {
   username: string;
   points: number;
   avatar: string;
-  change: 'up' | 'down' | 'same';
+  change: "up" | "down" | "same";
 }
 
 export interface Challenge {
@@ -42,8 +42,9 @@ export interface Challenge {
 export interface SafeZone {
   id: string;
   name: string;
-  type: 'park' | 'track' | 'lane';
+  type: "park" | "track" | "lane";
   lat: number;
   lng: number;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
 }
+

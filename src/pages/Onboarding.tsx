@@ -1,15 +1,15 @@
+import { ArrowRight, Bike, Bus, Car, CheckCircle2, Leaf } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Car, Bike, Bus, Leaf, CheckCircle2, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router";
 
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Card } from "../components/ui/card";
 import { Logo } from "../components/Logo";
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 
 export function Onboarding() {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(3);
   const [name, setName] = useState("");
   const [selectedMode, setSelectedMode] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState("");
@@ -17,9 +17,9 @@ export function Onboarding() {
   const navigate = useNavigate();
 
   const modes = [
-    { id: "car", label: "Car", icon: Car, color: "bg-orange-500" },
+    // { id: "car", label: "Car", icon: Car, color: "bg-orange-500" },
     { id: "bike", label: "Bike", icon: Bike, color: "bg-green-500" },
-    { id: "transit", label: "Public Transit", icon: Bus, color: "bg-blue-500" },
+    // { id: "transit", label: "Public Transit", icon: Bus, color: "bg-blue-500" },
     { id: "walk", label: "Walking", icon: Leaf, color: "bg-emerald-500" },
   ];
 
@@ -35,7 +35,7 @@ export function Onboarding() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 pb-28">
+    <div className="bg-gradient-primary bg-background flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md">
         <AnimatePresence mode="wait">
           {step === 0 && (
@@ -61,7 +61,7 @@ export function Onboarding() {
 
               <Button
                 onClick={() => setStep(1)}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 px-8 py-6 text-lg text-white hover:from-green-600 hover:to-emerald-700"
+                className="bg-linear-to-r from-green-500 to-emerald-600 px-8 py-6 text-lg text-white hover:from-green-600 hover:to-emerald-700"
                 size="lg"
               >
                 Start Your Journey <ArrowRight className="ml-2" />
@@ -77,16 +77,16 @@ export function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <Card className="border-slate-700 bg-slate-800 p-6">
+              <Card className="racing-card p-6">
                 <h2 className="mb-2 text-2xl text-white">Welcome, Racer!</h2>
                 <p className="mb-6 text-slate-300">What should we call you?</p>
 
                 <Input
+                  className="py-6 text-lg text-white"
                   type="text"
                   placeholder="Enter your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="border-slate-600 bg-slate-700 py-6 text-lg text-white placeholder:text-slate-400"
                 />
 
                 <Button
@@ -109,7 +109,7 @@ export function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <Card className="border-slate-700 bg-slate-800 p-6">
+              <Card className="racing-card p-6">
                 <h2 className="mb-2 text-2xl text-white">
                   How do you usually commute?
                 </h2>
@@ -129,14 +129,14 @@ export function Onboarding() {
                         className={`rounded-lg border-2 p-6 transition-all ${
                           selectedMode === mode.id
                             ? "border-green-500 bg-green-500/10"
-                            : "border-slate-600 bg-slate-700"
+                            : "border-muted bg-muted"
                         }`}
                       >
                         <Icon
                           className={`mx-auto mb-2 h-12 w-12 ${
                             selectedMode === mode.id
                               ? "text-green-400"
-                              : "text-slate-400"
+                              : "text-foreground"
                           }`}
                         />
                         <p className="text-sm text-white">{mode.label}</p>
@@ -165,7 +165,7 @@ export function Onboarding() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <Card className="border-slate-700 bg-slate-800 p-6">
+              <Card className="racing-card p-6">
                 <h2 className="mb-2 text-2xl text-white">
                   Choose Your Vehicle Avatar
                 </h2>
@@ -183,7 +183,7 @@ export function Onboarding() {
                       className={`flex w-full items-center gap-4 rounded-lg border-2 p-4 transition-all ${
                         selectedAvatar === avatar.id
                           ? "border-green-500 bg-green-500/10"
-                          : "border-slate-600 bg-slate-700"
+                          : "border-muted bg-muted"
                       }`}
                     >
                       <div className="text-4xl">{avatar.emoji}</div>
@@ -289,4 +289,3 @@ export function Onboarding() {
     </div>
   );
 }
-

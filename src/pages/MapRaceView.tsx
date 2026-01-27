@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useRef } from "react";
+import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
 import {
-  Play,
-  Square,
   Bike,
-  Footprints,
   Bus,
   Car,
+  Footprints,
   MapPin,
   Navigation2,
+  Play,
+  Square,
 } from "lucide-react";
-import { TransportMode } from "../../types.ts";
-import { SAFE_ZONES } from "../../constants";
-import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
+import React, { useCallback, useEffect, useState } from "react";
 
-setOptions({
-  key: import.meta.env.VITE_GOOGLE_API_KEY,
-  v: "weekly",
-});
+import { SAFE_ZONES } from "../../constants.ts";
+import { TransportMode } from "../../types.ts";
+import { Spinner } from "@/components/ui/spinner.tsx";
+
+const LIBRARIES = ["marker"];
 
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
@@ -99,6 +98,12 @@ const DARK_MAP_STYLE = [
   },
 ];
 
+interface SafeZoneMarker {
+  lat: number;
+  lng: number;
+  title: string;
+}
+
 const MapRaceView: React.FC = () => {
   const [isRacing, setIsRacing] = useState(false);
   const [speed, setSpeed] = useState(0);
@@ -106,13 +111,134 @@ const MapRaceView: React.FC = () => {
     TransportMode.BIKE,
   );
   const [elapsedTime, setElapsedTime] = useState(0);
+
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [currentPosition, setCurrentPosition] =
+    useState<google.maps.LatLngLiteral | null>(null);
+  const [safeZones, setSafeZones] = useState<SafeZoneMarker[]>([]);
+
   const [useFallback, setUseFallback] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any | null>(null);
-  const userMarkerRef = useRef<any | null>(null);
-  const watchIdRef = useRef<number | null>(null);
+  const onLoad = useCallback((map: google.maps.Map) => {
+    setMap(map);
+  }, []);
+
+  const onUnmount = useCallback(() => {
+    setMap(null);
+  }, []);
+
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_API_KEY,
+    libraries: LIBRARIES as any, // Cast because of issue with the library's type definitions
+  });
+
+  const mapOptions = React.useMemo(
+    () => ({
+      styles: DARK_MAP_STYLE,
+      disableDefaultUI: true,
+      zoomControl: false,
+    }),
+    [],
+  );
+
+  const center = React.useMemo(() => currentPosition, [currentPosition]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Get initial location
+  useEffect(() => {
+    let isMounted = true;
+    if (!isLoaded || useFallback) return;
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (!isMounted) return;
+
+          const pos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setCurrentPosition(pos);
+
+          // Generate safe zones around the initial user position
+          setSafeZones([
+            {
+              lat: pos.lat + 0.003,
+              lng: pos.lng + 0.003,
+              title: "Safe Zone Alpha",
+            },
+            {
+              lat: pos.lat - 0.002,
+              lng: pos.lng + 0.004,
+              title: "Safe Zone Beta",
+            },
+            {
+              lat: pos.lat + 0.001,
+              lng: pos.lng - 0.003,
+              title: "Eco Charging Station",
+            },
+          ]);
+        },
+        (error) => {
+          if (isMounted) {
+            console.warn("Geolocation error, using fallback:", error);
+            setLocationError(
+              "Unable to retrieve your location. Switching to simulated map.",
+            );
+            setUseFallback(true);
+          }
+        },
+      );
+    } else {
+      if (isMounted) {
+        setLocationError(
+          "Geolocation not supported. Switching to simulated map.",
+        );
+        setUseFallback(true);
+      }
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [isLoaded, useFallback]);
+
+  // Track User Location
+  useEffect(() => {
+    if (!isLoaded || !navigator.geolocation || useFallback || !map) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const pos = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setCurrentPosition(pos);
+
+        if (isRacing) {
+          map.panTo(pos);
+        }
+      },
+      (error) => console.error(error),
+      { enableHighAccuracy: true },
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [isRacing, isLoaded, useFallback, map]);
+
+  // Effect to handle API load errors or invalid keys
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+    if (loadError || !apiKey || apiKey.includes("placeholder")) {
+      console.warn("Maps API load error or invalid key, using fallback.");
+      setUseFallback(true);
+    }
+  }, [loadError]);
 
   // Timer and Speed Simulation
   useEffect(() => {
@@ -132,263 +258,145 @@ const MapRaceView: React.FC = () => {
     return () => clearInterval(interval);
   }, [isRacing, selectedMode]);
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // Initialize Map
-  useEffect(() => {
-    let isMounted = true;
-
-    const initMap = async () => {
-      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-
-      // Check for missing or placeholder keys
-      if (!apiKey || apiKey.includes("placeholder")) {
-        console.warn("Invalid or missing API Key, switching to fallback map.");
-        if (isMounted) setUseFallback(true);
-        return;
-      }
-
-      // Handle Global Auth Failure (Invalid Key from Google's side)
-      (window as any).gm_authFailure = () => {
-        console.error("Google Maps Auth Failure - Switching to fallback");
-        if (isMounted) setUseFallback(true);
-      };
-
-      const { Map } = await importLibrary("maps");
-
-      try {
-        if (!isMounted) return;
-
-        // Get initial location
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              if (!isMounted) return;
-              const { latitude, longitude } = position.coords;
-              const pos = { lat: latitude, lng: longitude };
-
-              // Check if mapRef exists and we are not already in fallback mode
-              if (mapRef.current) {
-                try {
-                  mapInstanceRef.current = new Map(mapRef.current, {
-                    center: pos,
-                    zoom: 16,
-                    styles: DARK_MAP_STYLE,
-                    disableDefaultUI: true,
-                    zoomControl: false,
-                  });
-
-                  // User Marker
-                  userMarkerRef.current = new google.maps.Marker({
-                    position: pos,
-                    map: mapInstanceRef.current,
-                    title: "You",
-                    icon: {
-                      path: google.maps.SymbolPath.CIRCLE,
-                      scale: 10,
-                      fillColor: "#4ADE80",
-                      fillOpacity: 1,
-                      strokeColor: "#ffffff",
-                      strokeWeight: 2,
-                    },
-                  });
-
-                  // Generate some "Safe Zones" around the user for the demo
-                  const generateSafeZone = (
-                    offsetLat: number,
-                    offsetLng: number,
-                    title: string,
-                  ) => {
-                    new google.maps.Marker({
-                      position: {
-                        lat: latitude + offsetLat,
-                        lng: longitude + offsetLng,
-                      },
-                      map: mapInstanceRef.current,
-                      title: title,
-                      icon: {
-                        path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z", // Simple pin path
-                        fillColor: "#FACC15", // Yellow
-                        fillOpacity: 0.9,
-                        scale: 1.5,
-                        strokeWeight: 1,
-                        strokeColor: "#000",
-                      },
-                      label: {
-                        text: "★",
-                        color: "black",
-                        fontSize: "10px",
-                        fontWeight: "bold",
-                      },
-                    });
-                  };
-
-                  generateSafeZone(0.003, 0.003, "Safe Zone Alpha");
-                  generateSafeZone(-0.002, 0.004, "Safe Zone Beta");
-                  generateSafeZone(0.001, -0.003, "Eco Charging Station");
-                } catch (mapError) {
-                  console.error("Error creating map instance:", mapError);
-                  if (isMounted) setUseFallback(true);
-                }
-              }
-            },
-            (error) => {
-              console.warn("Geolocation error, using fallback:", error);
-              if (isMounted) {
-                setLocationError(
-                  "Unable to retrieve your location. Switching to simulated map.",
-                );
-                setUseFallback(true);
-              }
-            },
-          );
-        } else {
-          if (isMounted) {
-            setLocationError(
-              "Geolocation not supported. Switching to simulated map.",
-            );
-            setUseFallback(true);
-          }
-        }
-      } catch (e) {
-        console.error("Error loading Google Maps Loader:", e);
-        if (isMounted) setUseFallback(true);
-      }
-    };
-
-    if (!useFallback) {
-      initMap();
-    }
-
-    return () => {
-      isMounted = false;
-      // Cleanup global handler
-      (window as any).gm_authFailure = () => {};
-    };
-  }, [useFallback]);
-
-  // Track User Location (Only if not in fallback)
-  useEffect(() => {
-    if (
-      !useFallback &&
-      navigator.geolocation &&
-      mapInstanceRef.current &&
-      userMarkerRef.current
-    ) {
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const pos = { lat: latitude, lng: longitude };
-
-          if (userMarkerRef.current) {
-            userMarkerRef.current.setPosition(pos);
-          }
-
-          if (isRacing && mapInstanceRef.current) {
-            mapInstanceRef.current.panTo(pos);
-          }
-        },
-        (error) => console.error(error),
-        { enableHighAccuracy: true },
-      );
-    }
-    return () => {
-      if (watchIdRef.current)
-        navigator.geolocation.clearWatch(watchIdRef.current);
-    };
-  }, [isRacing, useFallback]);
+  if (!isLoaded)
+    return (
+      <div className="absolute top-1/2 left-1/2 -translate-1/2">
+        <Spinner className="inline-block size-4" />
+        <span className="ml-2">Loading map please wait...</span>
+      </div>
+    );
 
   return (
-    <div className="h-screen w-full relative bg-slate-900 flex flex-col">
-      {/* Map Rendering: Real or Fallback */}
-      {useFallback ? (
-        // --- Fallback Simulated Map ---
-        <div className="absolute inset-0 z-0 overflow-hidden opacity-80 animate-fade-in">
-          <div
-            className="w-full h-full bg-[#1a1f2e] relative"
-            style={{
-              backgroundImage:
-                "radial-gradient(#2d3748 1px, transparent 1px), radial-gradient(#2d3748 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
-              backgroundPosition: "0 0, 20px 20px",
-            }}
-          >
-            {/* Simulated Roads */}
-            <div className="absolute top-1/2 left-0 w-full h-4 bg-slate-700 transform -rotate-12 border-y-2 border-slate-600"></div>
-            <div className="absolute top-0 left-1/3 h-full w-6 bg-slate-700 transform rotate-45 border-x-2 border-slate-600"></div>
+    <div className="relative flex h-screen w-full flex-col bg-slate-900">
+      <>
+        {/* Map Rendering: Real or Fallback */}
+        {useFallback && currentPosition === null ? (
+          // --- Fallback Simulated Map ---
+          <div className="animate-fade-in absolute inset-0 z-0 overflow-hidden opacity-80">
+            <div
+              className="relative h-full w-full bg-[#1a1f2e]"
+              style={{
+                backgroundImage:
+                  "radial-gradient(#2d3748 1px, transparent 1px), radial-gradient(#2d3748 1px, transparent 1px)",
+                backgroundSize: "40px 40px",
+                backgroundPosition: "0 0, 20px 20px",
+              }}
+            >
+              {/* Simulated Roads */}
+              <div className="absolute top-1/2 left-0 h-4 w-full -rotate-12 transform border-y-2 border-slate-600 bg-slate-700"></div>
+              <div className="absolute top-0 left-1/3 h-full w-6 rotate-45 transform border-x-2 border-slate-600 bg-slate-700"></div>
 
-            {/* Safe Zone Markers (From Constants) */}
-            {SAFE_ZONES.map((zone) => (
-              <div
-                key={zone.id}
-                className="absolute flex flex-col items-center group cursor-pointer transition-transform hover:scale-110"
-                style={{ top: `${zone.lat}%`, left: `${zone.lng}%` }}
-              >
-                <div className="relative">
-                  <div className="absolute -inset-2 bg-green-500/30 rounded-full animate-ping"></div>
-                  <div className="bg-green-500 text-slate-900 p-2 rounded-full border-2 border-white shadow-lg">
-                    <MapPin size={20} fill="currentColor" />
+              {/* Safe Zone Markers (From Constants) */}
+              {SAFE_ZONES.map((zone) => (
+                <div
+                  key={zone.id}
+                  className="group absolute flex cursor-pointer flex-col items-center transition-transform hover:scale-110"
+                  style={{ top: `${zone.lat}%`, left: `${zone.lng}%` }}
+                >
+                  <div className="relative">
+                    <div className="absolute -inset-2 animate-ping rounded-full bg-green-500/30"></div>
+                    <div className="rounded-full border-2 border-white bg-green-500 p-2 text-slate-900 shadow-lg">
+                      <MapPin size={20} fill="currentColor" />
+                    </div>
                   </div>
+                  <span className="mt-1 rounded border border-slate-700 bg-slate-900/80 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+                    {zone.name}
+                  </span>
                 </div>
-                <span className="mt-1 bg-slate-900/80 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm font-bold border border-slate-700">
-                  {zone.name}
-                </span>
-              </div>
-            ))}
+              ))}
 
-            {/* User Puck */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-              <div className="w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-xl flex items-center justify-center">
-                <Navigation2
-                  size={14}
-                  className="text-white fill-white transform rotate-45"
-                />
+              {/* User Puck */}
+              <div className="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2 transform">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border-4 border-white bg-blue-500 shadow-xl">
+                  <Navigation2
+                    size={14}
+                    className="rotate-45 transform fill-white text-white"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Fallback Notice */}
-            <div className="absolute top-4 left-4 bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 text-[10px] px-2 py-1 rounded">
-              Simulated Mode (Maps API Unavailable)
+              {/* Fallback Notice */}
+              <div className="absolute top-4 left-4 rounded border border-yellow-500/50 bg-yellow-500/10 px-2 py-1 text-[10px] text-yellow-500">
+                Simulated Mode
+                {locationError
+                  ? `: ${locationError}`
+                  : " (Maps API Unavailable)"}
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        // --- Real Google Map ---
-        <>
-          <div ref={mapRef} className="absolute inset-0 z-0 h-full w-full" />
-          {locationError && !useFallback && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4">
-              <div className="bg-red-500/20 border border-red-500 text-red-200 p-4 rounded-xl text-center backdrop-blur-md">
-                <p className="font-bold">! GPS Signal Lost</p>
-                <p className="text-sm">{locationError}</p>
+        ) : (
+          // --- Real Google Map ---
+          <>
+            <GoogleMap
+              mapContainerClassName="absolute inset-0 z-0 h-full w-full"
+              center={center as google.maps.LatLngLiteral}
+              zoom={16}
+              options={mapOptions}
+              onLoad={onLoad}
+              onUnmount={onUnmount}
+            >
+              {/* User Marker */}
+              <Marker
+                position={currentPosition as google.maps.LatLngLiteral}
+                title="You"
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-full border-4 border-white bg-blue-500 shadow-xl" />
+              </Marker>
+
+              {/* Safe Zone Markers */}
+              {safeZones.map((zone) => (
+                <Marker
+                  key={zone.title}
+                  position={zone}
+                  title={zone.title}
+                  icon={{
+                    path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
+                    fillColor: "#B6F25A",
+                    fillOpacity: 0.9,
+                    scale: 1.5,
+                    strokeWeight: 1,
+                    strokeColor: "#000",
+                    labelOrigin: new google.maps.Point(12, 10),
+                  }}
+                  label={{
+                    text: "★",
+                    color: "black",
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                  }}
+                />
+              ))}
+            </GoogleMap>
+            {locationError && !useFallback && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4">
+                <div className="rounded-xl border border-red-500 bg-red-500/20 p-4 text-center text-red-200 backdrop-blur-md">
+                  <p className="font-bold">! GPS Signal Lost</p>
+                  <p className="text-sm">{locationError}</p>
+                </div>
               </div>
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </>
+        )}
+      </>
 
       {/* Top HUD */}
-      <div className="absolute top-0 left-0 right-0 z-20 p-4 pt-8 bg-gradient-to-b from-slate-900/90 to-transparent pointer-events-none">
-        <div className="flex justify-between items-start">
-          <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg p-2 px-4 shadow-xl">
-            <span className="text-xs text-slate-400 block uppercase tracking-wider">
+      <div className="pointer-events-none absolute top-0 right-0 left-0 z-20 bg-gradient-to-b from-slate-900/90 to-transparent p-4 pt-8">
+        <div className="flex items-start justify-between">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/90 p-2 px-4 shadow-xl backdrop-blur">
+            <span className="block text-xs tracking-wider text-slate-400 uppercase">
               Speed
             </span>
-            <span className="text-2xl font-mono font-bold text-green-400">
+            <span className="font-mono text-2xl font-bold text-green-400">
               {speed} <span className="text-sm text-slate-500">km/h</span>
             </span>
           </div>
 
-          <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-lg p-2 px-4 shadow-xl text-right">
-            <span className="text-xs text-slate-400 block uppercase tracking-wider">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/90 p-2 px-4 text-right shadow-xl backdrop-blur">
+            <span className="block text-xs tracking-wider text-slate-400 uppercase">
               Time
             </span>
             <span
-              className={`text-2xl font-mono font-bold ${isRacing ? "text-white" : "text-slate-500"}`}
+              className={`font-mono text-2xl font-bold ${isRacing ? "text-white" : "text-slate-500"}`}
             >
               {formatTime(elapsedTime)}
             </span>
@@ -398,7 +406,7 @@ const MapRaceView: React.FC = () => {
 
       {/* Transport Mode Selector (Only visible if not racing) */}
       {!isRacing && (
-        <div className="absolute top-28 left-4 z-20 space-y-2 pointer-events-auto">
+        <div className="pointer-events-auto absolute top-28 left-4 z-20 space-y-2">
           {[
             { mode: TransportMode.WALK, icon: Footprints },
             { mode: TransportMode.BIKE, icon: Bike },
@@ -408,14 +416,14 @@ const MapRaceView: React.FC = () => {
             <button
               key={mode}
               onClick={() => setSelectedMode(mode)}
-              className={`flex items-center gap-2 p-2 pr-4 rounded-full shadow-lg border transition-all ${
+              className={`flex items-center gap-2 rounded-full border p-2 pr-4 shadow-lg transition-all ${
                 selectedMode === mode
-                  ? "bg-blue-600 border-blue-400 text-white"
-                  : "bg-slate-800 border-slate-700 text-slate-400"
+                  ? "border-blue-400 bg-blue-600 text-white"
+                  : "border-slate-700 bg-slate-800 text-slate-400"
               }`}
             >
               <div
-                className={`p-1 rounded-full ${selectedMode === mode ? "bg-white/20" : ""}`}
+                className={`rounded-full p-1 ${selectedMode === mode ? "bg-white/20" : ""}`}
               >
                 <Icon size={16} />
               </div>
@@ -426,11 +434,11 @@ const MapRaceView: React.FC = () => {
       )}
 
       {/* Bottom Control Deck */}
-      <div className="absolute bottom-24 left-4 right-4 z-20 pointer-events-auto">
-        <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700 rounded-2xl p-4 shadow-2xl">
-          <div className="flex items-center justify-between mb-4">
+      <div className="pointer-events-auto absolute right-4 bottom-24 left-4 z-20">
+        <div className="rounded-2xl border border-slate-700 bg-slate-900/90 p-4 shadow-2xl backdrop-blur-md">
+          <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-white font-bold">
+              <h3 className="font-bold text-white">
                 {isRacing ? "Race in Progress" : "Ready to Race?"}
               </h3>
               <p className="text-xs text-slate-400">
@@ -441,8 +449,8 @@ const MapRaceView: React.FC = () => {
             </div>
             {isRacing && (
               <div className="flex items-center gap-1">
-                <span className="block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                <span className="text-xs text-red-400 font-bold uppercase">
+                <span className="block h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
+                <span className="text-xs font-bold text-red-400 uppercase">
                   REC
                 </span>
               </div>
@@ -451,10 +459,10 @@ const MapRaceView: React.FC = () => {
 
           <button
             onClick={() => setIsRacing(!isRacing)}
-            className={`w-full py-4 rounded-xl font-black text-lg uppercase tracking-wide shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 ${
+            className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-lg font-black tracking-wide uppercase shadow-lg transition-transform active:scale-95 ${
               isRacing
-                ? "bg-red-500 hover:bg-red-600 text-white"
-                : "bg-green-500 hover:bg-green-600 text-slate-900"
+                ? "bg-red-500 text-white hover:bg-red-600"
+                : "bg-green-500 text-slate-900 hover:bg-green-600"
             }`}
           >
             {isRacing ? (
