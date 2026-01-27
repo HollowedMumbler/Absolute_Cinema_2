@@ -2,12 +2,13 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   updateDoc,
-  where,
 } from "firebase/firestore";
 import {
   createContext,
@@ -94,6 +95,7 @@ interface GameContextType {
   logCommute: (commute: Omit<CommuteLog, "id" | "points">) => void;
   completeChallenge: (challengeId: string) => void;
   refreshLeaderboard: () => Promise<void>;
+  refreshUserSession: () => Promise<void>;
 }
 
 // Static game data (keep hardcoded)
@@ -270,57 +272,82 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const currentUser = getAuth().currentUser;
+
+    if (!currentUser) return;
+    const userAccountsRef = doc(db, "Accounts", currentUser.uid);
+    const unsub = onSnapshot(userAccountsRef, (doc) => {
+      const data = doc.data();
+
+      if (doc.exists()) {
+        setUser({
+          name: data?.name || "EcoRacer",
+          avatar: getAvatarEmoji(data?.avatar) || "🌟",
+          isNew: data?.isNew,
+        });
+      }
+    });
+
+    return () => {
+      unsub();
+    };
+  }, []);
+
   const loadUserData = async (uid: string) => {
     setLoading(true);
     try {
-      const q = query(collection(db, "Accounts"), where("uid", "==", uid));
-      const userQuerySnapshot = await getDocs(q);
-      userQuerySnapshot.forEach((userDoc) => {
-        if (userDoc.exists()) {
-          const data = userDoc.data();
+      const userAccountsRef = doc(db, "Accounts", uid);
+      const userAccountsDoc = await getDoc(userAccountsRef);
+      if (userAccountsDoc.exists()) {
+        const data = userAccountsDoc.data();
 
-          // Set user info
-          setUser({
-            name: data.name || "EcoRacer",
-            avatar: getAvatarEmoji(data.avatar) || "🌟",
-            isNew: true,
-          });
+        // Set user info
+        setUser({
+          name: data.name || "EcoRacer",
+          avatar: getAvatarEmoji(data.avatar) || "🌟",
+          isNew: data.isNew,
+        });
 
-          // Set stats from Firestore
-          setStats({
-            totalPoints: data.points || 0,
-            level: data.level || 1,
-            xp: data.xp || 0,
-            xpToNextLevel: data.xpToNextLevel || 1000,
-            totalDistance: data.totalDistance || 0,
-            totalCarbonSaved: data.coSaved || 0,
-            totalCommutes: data.totalCommutes || 0,
-            currentStreak: data.streak || 0,
-            bestLapTime: data.bestLapTime || 0,
-            rank: data.rank || 0,
-          });
-
-          // Load badges progress
-          if (data.badges && Array.isArray(data.badges)) {
-            setBadges(
-              badgeTemplates.map((template) => ({
-                ...template,
-                unlocked: data.badges.includes(template.id),
-              })),
-            );
-          }
-
-          // Load challenge progress
-          if (data.challenges && typeof data.challenges === "object") {
-            setChallenges(
-              challengeTemplates.map((template) => ({
-                ...template,
-                current: data.challenges[template.id] || 0,
-              })),
-            );
-          }
+        // Load badges progress
+        if (data.badges && Array.isArray(data.badges)) {
+          setBadges(
+            badgeTemplates.map((template) => ({
+              ...template,
+              unlocked: data.badges.includes(template.id),
+            })),
+          );
         }
-      });
+
+        // Load challenge progress
+        if (data.challenges && typeof data.challenges === "object") {
+          setChallenges(
+            challengeTemplates.map((template) => ({
+              ...template,
+              current: data.challenges[template.id] || 0,
+            })),
+          );
+        }
+      }
+
+      // Set stats from Firestore
+      const mainUserRef = doc(db, "mainUser", uid);
+      const mainUserDoc = await getDoc(mainUserRef);
+
+      if (mainUserDoc.exists()) {
+        setStats({
+          totalPoints: mainUserDoc.data().points || 0,
+          level: mainUserDoc.data().level || 1,
+          xp: mainUserDoc.data().xp || 0,
+          xpToNextLevel: mainUserDoc.data().xpToNextLevel || 1000,
+          totalDistance: mainUserDoc.data().totalDistance || 0,
+          totalCarbonSaved: mainUserDoc.data().coSaved || 0,
+          totalCommutes: mainUserDoc.data().totalCommutes || 0,
+          currentStreak: mainUserDoc.data().streak || 0,
+          bestLapTime: mainUserDoc.data().bestLapTime || 0,
+          rank: mainUserDoc.data().rank || 0,
+        });
+      }
     } catch (error) {
       console.error("Error loading user data:", error);
     } finally {
@@ -453,6 +480,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
     await loadLeaderboard();
   };
 
+  const refreshUserSession = async () => {
+    try {
+      const currentUser = getAuth().currentUser;
+      if (!currentUser) return;
+
+      const userAccountsRef = doc(db, "Accounts", currentUser.uid);
+      const userAccountsDoc = await getDoc(userAccountsRef);
+
+      if (userAccountsDoc.exists()) {
+        const data = userAccountsDoc.data();
+
+        setUser({
+          name: data?.name || "EcoRacer",
+          avatar: getAvatarEmoji(data?.avatar) || "🌟",
+          isNew: data?.isNew,
+        });
+      }
+    } catch (error) {
+      console.log("Failed to refresh user session");
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-background flex min-h-screen items-center justify-center">
@@ -478,6 +527,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         logCommute,
         completeChallenge,
         refreshLeaderboard,
+        refreshUserSession,
       }}
     >
       {children}

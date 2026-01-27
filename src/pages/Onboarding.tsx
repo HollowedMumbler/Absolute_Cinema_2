@@ -1,18 +1,28 @@
-import { ArrowRight, Bike, Bus, Car, CheckCircle2, Leaf } from "lucide-react";
+import { db } from "@/config/firebase";
+import { getAuth, type User } from "firebase/auth";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
+import { ArrowRight, Bike, CheckCircle2, Leaf } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 
+import { Spinner } from "@/components/ui/spinner";
+import { useGame } from "@/contexts/GameContext";
 import { Logo } from "../components/Logo";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 
 export function Onboarding() {
-  const [step, setStep] = useState(3);
-  const [name, setName] = useState("");
+  const { user, refreshUserSession } = useGame();
+  const [step, setStep] = useState(0);
+  const [name, setName] = useState(user.name);
   const [selectedMode, setSelectedMode] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const auth = getAuth();
+  const currentUser = auth.currentUser as User;
 
   const navigate = useNavigate();
 
@@ -30,8 +40,43 @@ export function Onboarding() {
     { id: "scooter", label: "E-Scooter", emoji: "🛴", ecoFactor: 0.9 },
   ];
 
-  const handleComplete = () => {
-    navigate("/dashboard");
+  const handleComplete = async () => {
+    const accountsRef = doc(db, "Accounts", currentUser.uid);
+    const mainUserRef = doc(db, "mainUser", currentUser.uid);
+    setIsLoading(true);
+
+    const results = await Promise.allSettled([
+      await setDoc(mainUserRef, {
+        totalPoints: 100,
+        level: 1,
+        xp: 0,
+        xpToNextLevel: 1000,
+        totalDistance: 0,
+        totalCarbonSaved: 0,
+        totalCommutes: 0,
+        currentStreak: 0,
+        bestLapTime: 0,
+        rank: 0,
+        selectedVehicle: selectedMode,
+        avatar: selectedAvatar,
+      }),
+      await updateDoc(accountsRef, {
+        name,
+        isNew: false,
+      }),
+      await refreshUserSession(),
+    ]);
+
+    results.forEach((result) => {
+      if (result.status === "rejected") {
+        toast.error("Failed to save data.", { richColors: true });
+      }
+
+      if (result.status === "fulfilled") {
+        navigate("/");
+      }
+      setIsLoading(false);
+    });
   };
 
   return (
@@ -219,7 +264,7 @@ export function Onboarding() {
               animate={{ opacity: 1, scale: 1 }}
               className="space-y-6"
             >
-              <Card className="border-slate-700 bg-slate-800 p-6">
+              <Card className="racing-card p-6">
                 <div className="space-y-4 text-center">
                   <motion.div
                     animate={{ rotate: 360 }}
@@ -263,10 +308,16 @@ export function Onboarding() {
 
                   <Button
                     onClick={handleComplete}
-                    className="mt-6 w-full bg-gradient-to-r from-green-500 to-emerald-600 py-6 text-white hover:from-green-600 hover:to-emerald-700"
+                    className="mt-6 w-full bg-linear-to-r from-green-500 to-emerald-600 py-6 text-white hover:from-green-600 hover:to-emerald-700"
                     size="lg"
                   >
-                    Start Racing! 🏁
+                    {!isLoading ? (
+                      <>Start Racing! 🏁 </>
+                    ) : (
+                      <>
+                        <Spinner /> Saving data please wait...
+                      </>
+                    )}
                   </Button>
                 </div>
               </Card>
@@ -280,7 +331,7 @@ export function Onboarding() {
             <div
               key={i}
               className={`h-2 rounded-full transition-all ${
-                i === step ? "w-8 bg-green-500" : "w-2 bg-slate-600"
+                i === step ? "w-8 bg-green-500" : "bg-muted w-2"
               }`}
             />
           ))}

@@ -1,5 +1,15 @@
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
@@ -34,19 +44,19 @@ export default function Login() {
       const user = result.user;
 
       // Check if user already exists in Firestore
-      const usersRef = collection(db, "Accounts");
-      const q = query(usersRef, where("uid", "==", user.uid));
-      const querySnapshot = await getDocs(q);
+      const usersRef = doc(db, "Accounts", user.uid);
+      const usersDoc = await getDoc(usersRef);
 
-      if (querySnapshot.empty) {
+      if (!usersDoc.exists()) {
         // New user - create account
-        await addDoc(collection(db, "Accounts"), {
+        await setDoc(usersRef, {
           name: user.displayName,
           email: user.email,
-          uid: user.uid,
-          createdAt: new Date(),
+          createdAt: serverTimestamp(),
+          isNew: true,
         });
         console.log("New account created");
+        navigate("/");
       } else {
         console.log("User already exists, logging in");
         navigate("/");
