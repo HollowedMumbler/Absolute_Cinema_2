@@ -11,7 +11,7 @@ import { db } from "@/config/firebase";
 import { useGame } from "@/contexts/GameContext";
 
 const Settings = () => {
-  const { user } = useGame();
+  const { user, stats } = useGame();
   const [username, setUsername] = useState(user.name);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -95,7 +95,7 @@ const Settings = () => {
           <div className="flex-1">
             <p className="text-muted-foreground mb-1 text-sm">Your Avatar</p>
             <p className="font-display text-gradient-primary text-xl font-bold">
-              Level {user.level || 1} Racer
+              Level {stats.level || 1} Racer
             </p>
           </div>
         </div>

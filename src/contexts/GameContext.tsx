@@ -317,7 +317,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       if (mainUserDoc.exists()) {
         setStats({
-          totalPoints: mainUserDoc.data().points || 0,
+          totalPoints: mainUserDoc.data().totalPoints || 0,
           level: mainUserDoc.data().level || 1,
           xp: mainUserDoc.data().xp || 0,
           xpToNextLevel: mainUserDoc.data().xpToNextLevel || 1000,
