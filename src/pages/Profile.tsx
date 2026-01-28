@@ -1,33 +1,47 @@
-import { motion } from 'framer-motion';
-import { User, Settings, Share2, Leaf, Route, Zap, Trophy, ChevronRight } from 'lucide-react';
-import { useGame } from '@/contexts/GameContext';
-import { BadgeGrid } from '@/components/BadgeGrid';
-import { ProgressRing } from '@/components/ProgressRing';
+import { motion } from "framer-motion";
+import {
+  ChevronRight,
+  Leaf,
+  Route,
+  Settings,
+  Share2,
+  Trophy,
+  User,
+  Zap,
+} from "lucide-react";
+import { Link } from "react-router";
+
+import { BadgeGrid } from "@/components/BadgeGrid";
+import { MobileNav } from "@/components/MobileNav";
+import { ProgressRing } from "@/components/ProgressRing";
+import { useGame } from "@/contexts/GameContext";
 
 const Profile = () => {
   const { user, stats, commuteLogs } = useGame();
   const xpProgress = (stats.xp / stats.xpToNextLevel) * 100;
 
   return (
-    <div className="min-h-screen pb-24 px-4 pt-6">
+    <div className="min-h-screen px-4 pt-6 pb-24">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6"
+        className="mb-6 flex items-center justify-between"
       >
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-primary/10">
-            <User className="w-6 h-6 text-primary" />
+          <div className="bg-primary/10 rounded-xl p-3">
+            <User className="text-primary h-6 w-6" />
           </div>
-          <h1 className="text-2xl font-display font-bold">Profile</h1>
+          <h1 className="font-display text-2xl font-bold">Profile</h1>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          className="p-3 rounded-xl bg-muted"
-        >
-          <Settings className="w-5 h-5 text-muted-foreground" />
-        </motion.button>
+        <Link to="/settings">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            className="bg-muted hover:bg-muted/80 rounded-xl p-3 transition-colors"
+          >
+            <Settings className="text-muted-foreground h-5 w-5" />
+          </motion.button>
+        </Link>
       </motion.div>
 
       {/* Profile Card */}
@@ -40,27 +54,27 @@ const Profile = () => {
         <div className="flex items-center gap-6">
           <div className="relative">
             <ProgressRing progress={xpProgress} size={100}>
-              <div className="w-16 h-16 rounded-full bg-card border-2 border-primary flex items-center justify-center text-3xl">
+              <div className="bg-card border-primary flex h-16 w-16 items-center justify-center rounded-full border-2 text-3xl">
                 {user.avatar}
               </div>
             </ProgressRing>
           </div>
           <div className="flex-1">
-            <h2 className="font-display font-bold text-2xl mb-1">{user.name}</h2>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3">
+            <h2 className="font-display mb-1 text-2xl font-bold">
+              {user.name}
+            </h2>
+            <div className="text-muted-foreground mb-3 flex items-center gap-3 text-sm">
               <span className="stat-badge">
-                <Trophy className="w-3 h-3 text-accent" />
+                <Trophy className="text-accent h-3 w-3" />
                 Rank #{stats.rank}
               </span>
-              <span className="stat-badge">
-                Level {stats.level}
-              </span>
+              <span className="stat-badge">Level {stats.level}</span>
             </div>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 text-primary text-sm font-semibold"
+              className="text-primary flex items-center gap-2 text-sm font-semibold"
             >
-              <Share2 className="w-4 h-4" />
+              <Share2 className="h-4 w-4" />
               Share Profile
             </motion.button>
           </div>
@@ -72,35 +86,35 @@ const Profile = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="grid grid-cols-2 gap-3 mb-6"
+        className="mb-6 grid grid-cols-2 gap-3"
       >
         <div className="racing-card text-center">
-          <Leaf className="w-6 h-6 text-primary mx-auto mb-2" />
-          <p className="font-display font-bold text-2xl text-gradient-primary">
+          <Leaf className="text-primary mx-auto mb-2 h-6 w-6" />
+          <p className="font-display text-gradient-primary text-2xl font-bold">
             {stats.totalCarbonSaved.toFixed(1)}
           </p>
-          <p className="text-xs text-muted-foreground">kg CO₂ Saved</p>
+          <p className="text-muted-foreground text-xs">kg CO₂ Saved</p>
         </div>
         <div className="racing-card text-center">
-          <Route className="w-6 h-6 text-secondary mx-auto mb-2" />
-          <p className="font-display font-bold text-2xl text-secondary">
+          <Route className="text-secondary mx-auto mb-2 h-6 w-6" />
+          <p className="font-display text-secondary text-2xl font-bold">
             {stats.totalDistance.toFixed(0)}
           </p>
-          <p className="text-xs text-muted-foreground">km Traveled</p>
+          <p className="text-muted-foreground text-xs">km Traveled</p>
         </div>
         <div className="racing-card text-center">
-          <Zap className="w-6 h-6 text-accent mx-auto mb-2" />
-          <p className="font-display font-bold text-2xl text-gradient-accent">
+          <Zap className="text-accent mx-auto mb-2 h-6 w-6" />
+          <p className="font-display text-gradient-accent text-2xl font-bold">
             {stats.totalPoints.toLocaleString()}
           </p>
-          <p className="text-xs text-muted-foreground">Total Points</p>
+          <p className="text-muted-foreground text-xs">Total Points</p>
         </div>
         <div className="racing-card text-center">
-          <Trophy className="w-6 h-6 text-primary mx-auto mb-2" />
-          <p className="font-display font-bold text-2xl">
+          <Trophy className="text-primary mx-auto mb-2 h-6 w-6" />
+          <p className="font-display text-2xl font-bold">
             {stats.totalCommutes}
           </p>
-          <p className="text-xs text-muted-foreground">Commutes</p>
+          <p className="text-muted-foreground text-xs">Commutes</p>
         </div>
       </motion.div>
 
@@ -111,10 +125,10 @@ const Profile = () => {
         transition={{ delay: 0.3 }}
         className="mb-6"
       >
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display font-bold text-lg">Badges</h2>
-          <button className="text-primary text-sm flex items-center gap-1">
-            View All <ChevronRight className="w-4 h-4" />
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-display text-lg font-bold">Badges</h2>
+          <button className="text-primary flex items-center gap-1 text-sm">
+            View All <ChevronRight className="h-4 w-4" />
           </button>
         </div>
         <BadgeGrid />
@@ -126,45 +140,58 @@ const Profile = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <h2 className="font-display font-bold text-lg mb-3">Eco Impact</h2>
+        <h2 className="font-display mb-3 text-lg font-bold">Eco Impact</h2>
         <div className="racing-card">
           <div className="space-y-4">
             <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Trees Equivalent</span>
+              <div className="mb-2 flex justify-between">
+                <span className="text-muted-foreground text-sm">
+                  Trees Equivalent
+                </span>
                 <span className="font-display font-semibold">
                   {Math.floor(stats.totalCarbonSaved / 21)} 🌳
                 </span>
               </div>
               <div className="progress-track">
-                <div className="progress-fill" style={{ width: '65%' }} />
+                <div className="progress-fill" style={{ width: "65%" }} />
               </div>
             </div>
             <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Fuel Saved</span>
+              <div className="mb-2 flex justify-between">
+                <span className="text-muted-foreground text-sm">
+                  Fuel Saved
+                </span>
                 <span className="font-display font-semibold">
                   {(stats.totalDistance * 0.08).toFixed(1)}L ⛽
                 </span>
               </div>
               <div className="progress-track">
-                <div className="progress-fill bg-secondary" style={{ width: '45%' }} />
+                <div
+                  className="progress-fill bg-secondary"
+                  style={{ width: "45%" }}
+                />
               </div>
             </div>
             <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Money Saved</span>
+              <div className="mb-2 flex justify-between">
+                <span className="text-muted-foreground text-sm">
+                  Money Saved
+                </span>
                 <span className="font-display font-semibold">
                   ${(stats.totalDistance * 0.15).toFixed(0)} 💰
                 </span>
               </div>
               <div className="progress-track">
-                <div className="progress-fill bg-accent" style={{ width: '80%' }} />
+                <div
+                  className="progress-fill bg-accent"
+                  style={{ width: "80%" }}
+                />
               </div>
             </div>
           </div>
         </div>
       </motion.div>
+      <MobileNav />
     </div>
   );
 };

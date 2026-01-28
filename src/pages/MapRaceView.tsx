@@ -11,9 +11,10 @@ import {
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 
+import { MobileNav } from "@/components/MobileNav.tsx";
+import { Spinner } from "@/components/ui/spinner.tsx";
 import { SAFE_ZONES } from "../../constants.ts";
 import { TransportMode } from "../../types.ts";
-import { Spinner } from "@/components/ui/spinner.tsx";
 
 const LIBRARIES = ["marker"];
 
@@ -477,6 +478,7 @@ const MapRaceView: React.FC = () => {
           </button>
         </div>
       </div>
+      <MobileNav />
     </div>
   );
 };

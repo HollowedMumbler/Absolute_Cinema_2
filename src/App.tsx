@@ -13,6 +13,7 @@ import NotFound from "@/pages/NotFound";
 import { Onboarding } from "@/pages/Onboarding";
 import Profile from "@/pages/Profile";
 import ProtectedRoutes from "./components/ProtectedRoutes";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,14 @@ const App = () => {
                 <Route path="/challenges" element={<Challenges />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoutes>
+                      <Settings />
+                    </ProtectedRoutes>
+                  }
+                />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </div>

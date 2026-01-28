@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ChevronRight, Flame, Leaf, Route, Trophy, Zap } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 
+import { MobileNav } from "@/components/MobileNav";
 import { ProgressRing } from "@/components/ProgressRing";
 import { StatCard } from "@/components/StatCard";
 import { VehicleSelector } from "@/components/VehicleSelector";
@@ -194,6 +195,7 @@ const Dashboard = () => {
           </motion.button>
         </Link>
       </motion.div>
+      <MobileNav />
     </div>
   );
 };

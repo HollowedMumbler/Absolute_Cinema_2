@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Calendar, Star, Target, Zap } from "lucide-react";
 
 import { ChallengeCard } from "@/components/ChallengeCard";
+import { MobileNav } from "@/components/MobileNav";
 import { useGame } from "@/contexts/GameContext";
 
 const Challenges = () => {
@@ -116,6 +117,7 @@ const Challenges = () => {
           </span>
         </p>
       </motion.div>
+      <MobileNav />
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
-import { Trophy, Medal, Crown, TrendingUp } from "lucide-react";
+import { Crown, Medal, TrendingUp, Trophy } from "lucide-react";
+
+import { MobileNav } from "@/components/MobileNav";
 import { useGame } from "@/contexts/GameContext";
 
 const Leaderboard = () => {
@@ -198,6 +200,7 @@ const Leaderboard = () => {
           ))}
         </div>
       </motion.div>
+      <MobileNav />
     </div>
   );
 };

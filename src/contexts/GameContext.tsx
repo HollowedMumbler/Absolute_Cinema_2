@@ -266,32 +266,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (firebaseUser) {
         loadUserData(firebaseUser.uid);
         loadLeaderboard();
+      } else {
+        setUser(null);
+        setLoading(false);
       }
     });
 
     return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const currentUser = getAuth().currentUser;
-
-    if (!currentUser) return;
-    const userAccountsRef = doc(db, "Accounts", currentUser.uid);
-    const unsub = onSnapshot(userAccountsRef, (doc) => {
-      const data = doc.data();
-
-      if (doc.exists()) {
-        setUser({
-          name: data?.name || "EcoRacer",
-          avatar: getAvatarEmoji(data?.avatar) || "🌟",
-          isNew: data?.isNew,
-        });
-      }
-    });
-
-    return () => {
-      unsub();
-    };
   }, []);
 
   const loadUserData = async (uid: string) => {
@@ -350,6 +331,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error("Error loading user data:", error);
+      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -379,6 +361,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setLeaderboard(leaderboardData);
     } catch (error) {
       console.error("Error loading leaderboard:", error);
+      setLoading(false);
     } finally {
       setLoading(false);
     }
